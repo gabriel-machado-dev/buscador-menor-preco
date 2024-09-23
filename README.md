@@ -19,8 +19,7 @@ This script is a price comparison tool that searches for a specified product on 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/price-comparator.git
-cd price-comparator
+git clone https://github.com/gabriel-machado-dev/buscador-menor-preco.git
 ```
 
 2. Install the required Python packages:
