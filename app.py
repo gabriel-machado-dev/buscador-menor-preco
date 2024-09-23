@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 import logging as lg
+import threading
 
 DOWNLOAD_DIRECTORY = r'./lowerprice'
 
@@ -155,6 +156,21 @@ def close_browser(driver):
         lg.error(f'Error occurred while closing the browser: {type(e).__name__} - {e}')
         return None 
 
+def search_thread(product, window):
+    driver, wait = start_driver()
+
+    def update_status(message):
+        window.write_event_value('-UPDATE-', message)
+
+    try:
+        compare_price(driver, wait, product, update_status)
+    except Exception as e:
+        lg.error(f'Error occurred while comparing prices: {type(e).__name__} - {e}')
+        update_status(f'Error occurred while comparing prices: {type(e).__name__} - {e}')
+    finally:
+        close_browser(driver)
+        window.write_event_value('-SEARCH_DONE-', '')
+
 def main():
     sg.theme('SystemDefault')
 
@@ -177,18 +193,16 @@ def main():
             product = values['-PRODUCT-']
             product = handle_product_input(product)
             window['-OUTPUT-'].update('')
-            driver, wait = start_driver()
+            window['Search'].update(disabled=True)
+            window['Exit'].update(disabled=True)
+            threading.Thread(target=search_thread, args=(product, window), daemon=True).start()
 
-            def update_status(message):
-                window['-OUTPUT-'].update(message + '\n', append=True)
+        if event == '-UPDATE-':
+            window['-OUTPUT-'].update(values[event] + '\n', append=True)
 
-            try:
-                compare_price(driver, wait, product, update_status)
-            except Exception as e:
-                lg.error(f'Error occurred while comparing prices: {type(e).__name__} - {e}')
-                update_status(f'Error occurred while comparing prices: {type(e).__name__} - {e}')
-            finally:
-                close_browser(driver)
+        if event == '-SEARCH_DONE-':
+            window['Search'].update(disabled=False)
+            window['Exit'].update(disabled=False)
 
     window.close()
 
